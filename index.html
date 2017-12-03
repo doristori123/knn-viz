@@ -43,12 +43,12 @@ body {
 <script>
 
 // HYPERPARAMETERS 
-const DENSITY = 10; //logical width and height for grid
+const DENSITY = 200; //logical width and height for grid
 var domain = [-4,4]; //the actual coordinate boundaries that we will use
 
 // Display parameters
-const   width = 400; // width in pixel for whole plot
-const   height = 400; // height in pixel for whole plot
+const   width = 600; // width in pixel for whole plot
+const   height = 600; // height in pixel for whole plot
 var padding = 20; // padding for axes
 
 
@@ -174,6 +174,10 @@ function constructKDTree(points) {
 
 function getDecisionBoundary(tree) {
 
+
+    var densityToCoordinateX = d3.scale.linear().domain([0, DENSITY-1]).range(domain);
+    var densityToCoordinateY = d3.scale.linear().domain([DENSITY-1,0]).range(domain);
+    
     //define a grid with the given density 
     var grid = new Array(DENSITY);
     for(k = 0; k < DENSITY; k++)
@@ -185,16 +189,21 @@ function getDecisionBoundary(tree) {
     {
         for(j = 0; j < DENSITY; j++) {
             
-            var nearest = tree.nearest({ x: i, y: j }, 5);
-        
+            var nearest = tree.nearest({ x: densityToCoordinateX(i), y: densityToCoordinateY(j) }, 1);
+            //console.log("Grid Point in question: ", { x: densityToCoordinateX(i), y: densityToCoordinateY(j) })
+            //console.log(nearest[0][0].label) 
+
+
+            
             var sum = 0;
             for (var h = 0; h < nearest.length; h++)
             {   
-                sum = sum + (nearest[h][0].label == 0 ? -1 : 1);
+                sum = sum + (nearest[h][0].label == -1 ? -1 : 1);
             
             }
 
-            grid[i][j] = (sum >= 0 ? 1 : 0)
+            grid[i][j] = (sum >= 0 ? 1 : -1)
+            console.log("Our final label for grid point", grid[i][j])
             
         }
     }
@@ -204,10 +213,10 @@ function getDecisionBoundary(tree) {
 
 function labelToColor(label) {
 
-    if (label == 0)
+    if (label == -1) // orange
         return d3.rgb(255, 127, 14)
 
-    if (label == 1)
+    if (label == 1) // blue
         return d3.rgb(31, 119, 180)
 
 }
@@ -219,16 +228,16 @@ function updateHeatmap(grid){
     var image = context.createImageData(DENSITY, DENSITY);
 
 
-    for(i = 0, k = -1; i < DENSITY; ++i)
+    for(j = 0, k = -1; j < DENSITY; ++j)
     {
-        for(j = 0; j < DENSITY; ++j)
+        for(i = 0; i < DENSITY; ++i)
         {
             c = labelToColor(grid[i][j]);
             
             image.data[++k] = c.r;
             image.data[++k] = c.g;
             image.data[++k] = c.b;
-            image.data[++k] = 140;
+            image.data[++k] = 170;
         }
     }
    
@@ -238,13 +247,15 @@ function updateHeatmap(grid){
 
 }
 
-var gaussianData = generateTrainingData(200,0.5);
+var gaussianData = generateTrainingData(400,2);
 
 // filter out points that fall out of our domain
 gaussianData = gaussianData.filter(p => {
       return p.x >= domain[0] && p.x <= domain[1]
         && p.y >= domain[0] && p.y <= domain[1];
     });
+
+    gaussianData.push({x: -4, y: -4, label:1}, {x:4, y:4, label:-1})
 
 var tree = constructKDTree(gaussianData);
 console.log(gaussianData);
@@ -261,9 +272,7 @@ var xValue = function(d) { return d.x;}, // data -> value
 var yValue = function(d) { return d.y;}, // data -> value
     yMap = function(d) { return yScale(yValue(d));} // data -> display
 
-// setup fill color
-var cValue = function(d) { return d.label;},
-    color = d3.scale.category10();
+// setup fill co
 
   // draw dot
   svg.selectAll(".dot")
@@ -273,7 +282,7 @@ var cValue = function(d) { return d.label;},
       .attr("r", 3.5)
       .attr("cx", xMap)
       .attr("cy", yMap)
-      .style("fill", function(d) { return color(cValue(d));}) 
+      .style("fill", function(d) { return labelToColor(d.label);}) 
 
 
 
