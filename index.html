@@ -1,15 +1,31 @@
 <!DOCTYPE html>
 <html>
 <meta charset="utf-8">
-
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
 <style>
 body {
   font: 11px sans-serif;
+
+}
+#main {
+    display: flex;
+    margin: 40px;
+}
+#controls {
+    width: 20%;
+    margin-right: 20px;
+}
+#plot {
+    margin-right: 40px;
+    margin-left: 40px;
+    position: relative;
+    width:40%;
 }
 
-#plot {
-    margin: 40px;
-    position: relative;
+#dart {
+ width: 40%;
 }
 
 .axis path,
@@ -25,32 +41,52 @@ body {
     fill-opacity: 0.8;
 }
 .dot {
-      stroke: white;
+}
+
+.train {
+    stroke: white;
     stroke-width: 1;
     stroke-opacity: 0.8;
     fill-opacity: 0.9;
 }
 
+.test{
+    stroke: black;
+    stroke-width: 1;
+    stroke-opacity: 0.8;
+    fill-opacity: 0.9; 
+}
+
 
 </style>
 <body>
-
-<div id="plot"></div>
+    <div id="main">
+        <div id="controls" style="width:200px;">
+            <h2>Settings</h2>
+            <p>Parameter k:</p><span class="kval"></span>
+            <input id="kparameter" class="mdl-slider mdl-js-slider" type="range"
+            min="1" max="200" value="25" tabindex="0">
+        </div>
+        <div id="plot"></div>
+        <div id="dart"></div>
+    </div>
 
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="/kdTree.js"></script>
 
+
 <script>
 
 // HYPERPARAMETERS 
-const DENSITY = 200; //logical width and height for grid
+const DENSITY = 50; //logical width and height for grid
 var domain = [-4,4]; //the actual coordinate boundaries that we will use
 
 // Display parameters
 const   width = 600; // width in pixel for whole plot
 const   height = 600; // height in pixel for whole plot
+const   dartBoardSize = 400; //dartboard size in px size*size
 var padding = 20; // padding for axes
-
+var NUM_SHADES = 30;
 
 /*
 
@@ -58,16 +94,17 @@ var padding = 20; // padding for axes
 
 */
 
- //get our canvas element set up
- var canvas = d3.select('#plot')
-        .append('canvas')
-        .attr("width", DENSITY)
-        .attr("height", DENSITY)
-        .style("width", (width - 2*padding) + "px")
-        .style("height", (height - 2*padding) + "px")
-        .style("position", "absolute")
-        .style("top", `${padding}px`)
-        .style("left", `${padding}px`);
+
+//get our canvas element set up
+var canvas = d3.select('#plot')
+    .append('canvas')
+    .attr("width", DENSITY)
+    .attr("height", DENSITY)
+    .style("width", (width - 2*padding) + "px")
+    .style("height", (height - 2*padding) + "px")
+    .style("position", "absolute")
+    .style("top", `${padding}px`)
+    .style("left", `${padding}px`);
 
 //set up our svg (plot)
 var svg = d3.select('#plot').append('svg')
@@ -117,6 +154,28 @@ svg.append("g")
 
 
 
+/*
+
+        DARTBOARD SETUP
+
+*/
+
+var svgDartBoard = d3.select("#dart").append("svg")
+                                    .attr("width", dartBoardSize)
+                                    .attr("height", dartBoardSize)
+                                    .append("g")
+
+
+
+// Set up our scales
+var dartScale = d3.scale.linear()
+    .domain(domain)
+    .range([0, dartBoardSize]);
+
+var dartRadiusScale = d3.scale.linear()
+    .domain([0,2])
+    .range([0, dartBoardSize/2]); 
+
 
 /**
  * 
@@ -153,8 +212,9 @@ function generateTrainingData(sampleSize, noise) {
         }
     }
 
-    generateGaussian(2,2,1)
-    generateGaussian(-2,-2,-1)
+    generateGaussian(1,1,1)
+    generateGaussian(-1,-1,-1)
+
 
     return points
 }
@@ -172,7 +232,7 @@ function constructKDTree(points) {
 }
 
 
-function getDecisionBoundary(tree) {
+function getDecisionBoundary(tree, kval) {
 
 
     var densityToCoordinateX = d3.scale.linear().domain([0, DENSITY-1]).range(domain);
@@ -189,27 +249,44 @@ function getDecisionBoundary(tree) {
     {
         for(j = 0; j < DENSITY; j++) {
             
-            var nearest = tree.nearest({ x: densityToCoordinateX(i), y: densityToCoordinateY(j) }, 1);
-            //console.log("Grid Point in question: ", { x: densityToCoordinateX(i), y: densityToCoordinateY(j) })
-            //console.log(nearest[0][0].label) 
-
-
+            var nearest = tree.nearest({ x: densityToCoordinateX(i), y: densityToCoordinateY(j) }, kval);
             
             var sum = 0;
+            var votes = []
             for (var h = 0; h < nearest.length; h++)
             {   
+                votes.push(nearest[h][0].label)
                 sum = sum + (nearest[h][0].label == -1 ? -1 : 1);
-            
+                
             }
-
-            grid[i][j] = (sum >= 0 ? 1 : -1)
-            console.log("Our final label for grid point", grid[i][j])
+            
+            
+            grid[i][j] = sum/kval
             
         }
     }
     return grid
 
 }
+
+// define color range
+var tmpScale = d3.scale.linear()
+        .domain([0, .5, 1])
+        .range(["#f59322", "#e8eaeb", "#0877bd"])
+        .clamp(true);
+    
+// Due to numerical error, we need to specify
+// d3.range(0, end + small_epsilon, step)
+// in order to guarantee that we will have end/step entries with
+// the last element being equal to end.
+var colors = d3.range(0, 1 + 1E-9, 1 / NUM_SHADES).map(a => {
+    return tmpScale(a);
+});
+
+var color = d3.scale.quantize()
+                     .domain([-1, 1])
+                     .range(colors);
+
 
 function labelToColor(label) {
 
@@ -231,23 +308,52 @@ function updateHeatmap(grid){
     for(j = 0, k = -1; j < DENSITY; ++j)
     {
         for(i = 0; i < DENSITY; ++i)
-        {
-            c = labelToColor(grid[i][j]);
-            
+        {   
+            c = d3.rgb(color(grid[i][j]));
             image.data[++k] = c.r;
             image.data[++k] = c.g;
             image.data[++k] = c.b;
-            image.data[++k] = 170;
+            image.data[++k] = 190;
         }
     }
    
     context.putImageData(image, 0, 0);
 
-    
 
 }
 
+var renderTrainingPoints = function(data) {
+  // draw dot
+  svg.selectAll(".dot")
+      .data(data)
+    .enter().append("circle")
+      .attr("class", "dot")
+      .attr("class", "train")
+      .attr("r", 4.5)
+      .attr("cx", xMap)
+      .attr("cy", yMap)
+      .style("fill", function(d) { return labelToColor(d.label);}) 
+};
+
+var renderTestPoints = function(data) {
+    console.log(data)
+  
+  // draw dot
+  svg.selectAll(".dot")
+      .data(data)
+    .enter().append("circle")
+      .attr("class", "dot")
+      .attr("class", "test")
+      .attr("r", 4.5)
+      .attr("cx", xMap)
+      .attr("cy", yMap)
+      .style("fill", function(d) { return labelToColor(d.label);}) 
+};
+
+
+
 var gaussianData = generateTrainingData(400,2);
+//var testData = generateTrainingData(200,2);
 
 // filter out points that fall out of our domain
 gaussianData = gaussianData.filter(p => {
@@ -255,37 +361,51 @@ gaussianData = gaussianData.filter(p => {
         && p.y >= domain[0] && p.y <= domain[1];
     });
 
-    gaussianData.push({x: -4, y: -4, label:1}, {x:4, y:4, label:-1})
+
+
 
 var tree = constructKDTree(gaussianData);
-console.log(gaussianData);
-var grid = getDecisionBoundary(tree);
+var grid = getDecisionBoundary(tree,5);
 updateHeatmap(grid);
 
 
 // setup x 
-var xValue = function(d) { return d.x;}, // data -> value
-    xMap = function(d) { return xScale(xValue(d));} // data -> display
+var xValue = function(d) { return d.x;} // data -> value
+var xMap = function(d) { return xScale(xValue(d));} // data -> display
 
 
 // setup y
-var yValue = function(d) { return d.y;}, // data -> value
-    yMap = function(d) { return yScale(yValue(d));} // data -> display
+var yValue = function(d) { return d.y;} // data -> value
+var yMap = function(d) { return yScale(yValue(d));} // data -> display
 
-// setup fill co
-
-  // draw dot
-  svg.selectAll(".dot")
-      .data(gaussianData)
-    .enter().append("circle")
-      .attr("class", "dot")
-      .attr("r", 3.5)
-      .attr("cx", xMap)
-      .attr("cy", yMap)
-      .style("fill", function(d) { return labelToColor(d.label);}) 
+renderTrainingPoints(gaussianData);
+//renderTestPoints(testData);
+d3.select('#kparameter').on('change', function() {
+  
+  d3.select('.kval').text(this.value)
+  grid = getDecisionBoundary(tree, this.value)
+  updateHeatmap(grid)
 
 
+});
 
+
+var jsonCircles = [
+   { "x_axis": 0, "y_axis": 0, "radius": 1.1, "color" : "white"},
+   { "x_axis": 0, "y_axis": 0, "radius": 0.8, "color" : "#72B4DC"},
+   { "x_axis": 0, "y_axis": 0, "radius": 0.5, "color" : "white" },
+   { "x_axis": 0, "y_axis": 0, "radius": 0.2, "color" : "#C32D3B"},];
+
+svgDartBoard.selectAll("circle")
+    .data(jsonCircles)
+    .enter()
+    .append("circle")
+    .attr("cx", function (d) { return dartScale(d.x_axis); })
+        .attr("cy", function (d) { return dartScale(d.y_axis); })
+        .attr("r", function (d) { return dartRadiusScale(d.radius); })
+        .attr("stroke", "black")
+        .attr("stroke-width", 3)
+        .style("fill", function(d) { return d.color; });
 
 </script>
 </body>
