@@ -2,26 +2,96 @@
 <html>
 <meta charset="utf-8">
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.blue_grey-blue.min.css" />
 <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.17.0/math.min.js"></script>
 <style>
 body {
-  font: 11px sans-serif;
+  
+    background-color: #f7f7f7;
+    
+}
+
+header {
+    font-family: "Roboto","Helvetica","Arial",sans-serif;
+    border-bottom: solid 1px rgba(0,0,0,0.4);
+    background-color: #183D4E;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    position: relative;
+    line-height: 1.45em;
+    font-weight: 300;
+    letter-spacing: -.02em;
+    color: rgba(255, 255, 255, 0.7);
 
 }
+
+.heading {
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 30px;
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 30px;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+    font-weight: 300;
+}
+
+.heading b{
+    font-weight: 400;
+    color: rgba(255, 255, 255, 1);
+}
+
 #main {
     display: flex;
-    margin: 40px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 1100px;
+    margin-top: 50px;
+    -webkit-justify-content: space-between;
+    justify-content: space-between;
 }
+
+#main h4 {
+    font-weight: 400;
+    font-size: 20px;
+    text-transform: uppercase;
+}
+
+#main span {
+    font-weight: 300;
+    font-size: 20px;
+    margin-bottom: 10px;
+    margin-right: 5px;
+}
+
+#main p {
+    color: #777;
+    font-size: 16px;
+    font-weight: 300;
+    font-family: "Helvetica", "Arial", sans-serif;
+}
+
+.kselect > span {
+    display: inline-block;
+   
+}
+
+
 #controls {
     width: 20%;
-    margin-right: 20px;
 }
-#plot {
-    margin-right: 40px;
-    margin-left: 40px;
-    position: relative;
+#output {
     width:40%;
+    
+}
+
+#plot{
+    position: relative;
+    width: 500px;
 }
 
 #dart {
@@ -57,37 +127,82 @@ body {
     fill-opacity: 0.9; 
 }
 
+/* Slider */
+
+#main-part .mdl-slider.is-upgraded {
+  color: #183D4E;
+}
+
+#main-part .mdl-slider__background-lower {
+  background-color: #183D4E;
+}
+
+#main-part .mdl-slider.is-upgraded::-webkit-slider-thumb {
+  background-color: #183D4E;
+}
+
+#main-part .mdl-slider.is-upgraded::-moz-range-thumb {
+  background-color: #183D4E;
+}
+
+#main-part .mdl-slider.is-upgraded::-ms-thumb {
+  background-color: #183D4E;
+}
+
+#main-part .mdl-slider.is-upgraded.is-lowest-value::-webkit-slider-thumb {
+  border-color: #183D4E;
+}
+
+#main-part .mdl-slider.is-upgraded.is-lowest-value::-moz-range-thumb {
+  border-color: #183D4E;
+}
+/* Keep grey focus circle for non-start values */
+#main-part .mdl-slider.is-upgraded:focus:not(:active)::-webkit-slider-thumb {
+  box-shadow: 0 0 0 10px rgba(0,0,0, 0.12);
+}
+
 
 </style>
 <body>
+    <header>
+            <h1 class="heading">Tinker With K-nearest Neighbours and Linear Models to Understand the <b>Bias-Variance Tradeoff</b> <br><span class="optional">Right Here </span>in Your Browser.</h1>
+    </header>
     <div id="main">
         <div id="controls" style="width:200px;">
-            <h2>Settings</h2>
-            <p>Parameter k:</p><span class="kval"></span>
+            <h4>Settings</h4>
+            <p>Choose the number of nearest neighbours:</p><div class="kselect"><span>K:</span><span class="kval"></span></div>
             <input id="kparameter" class="mdl-slider mdl-js-slider" type="range"
             min="1" max="200" value="25" tabindex="0">
         </div>
-        <div id="plot"></div>
-        <div id="dart"></div>
+        <div id="output">
+                <h4>Output</h4>
+                <div id="plot"></div>
+        </div>
+        <div id="dart">
+                <h4>Bias and Variance</h4>
+        </div>
     </div>
 
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="/kdTree.js"></script>
+<script src="/multivariate-normal.min.js"></script>
+
 
 
 <script>
 
 // HYPERPARAMETERS 
 const DENSITY = 50; //logical width and height for grid
-var domain = [-4,4]; //the actual coordinate boundaries that we will use
+var domain = [-3.5,3.5]; //the actual coordinate boundaries that we will use
 
 // Display parameters
-const   width = 600; // width in pixel for whole plot
-const   height = 600; // height in pixel for whole plot
-const   dartBoardSize = 400; //dartboard size in px size*size
+const width = 400; // width in pixel for whole plot
+const height = 400; // height in pixel for whole plot
+const dartBoardSize = 400; //dartboard size in px size*size
+const init_k = 5;
 var padding = 20; // padding for axes
 var NUM_SHADES = 30;
-
+var MultivariateNormal = window.MultivariateNormal.default;
 /*
 
     SETUP DOM AND D3 OBJECTS
@@ -203,10 +318,10 @@ function generateTrainingData(sampleSize, noise) {
     var variance = noise;
 
     function generateGaussian(cx, cy, label) {
-        for (let i = 0; i < sampleSize / 2; i++) {
+        for (var i = 0; i < sampleSize / 2; i++) {
             
-            let x = normalRandom(cx, variance);
-            let y = normalRandom(cy, variance);
+            var x = normalRandom(cx, variance);
+            var y = normalRandom(cy, variance);
             points.push({x, y, label});
         
         }
@@ -217,6 +332,69 @@ function generateTrainingData(sampleSize, noise) {
 
 
     return points
+}
+
+function get_means() {
+    var identidy_mat = [
+        [ 1.0, 0.0,],
+        [ 0.0, 1.0]
+    ];
+
+    var mean_sample_size = 10;
+
+    var mean_distribution_class1 = MultivariateNormal([0.5,-0.5], identidy_mat)
+    var mean_distribution_class2 = MultivariateNormal([-0.5,0.5], identidy_mat)
+
+    var means_class_1 = [];
+    var means_class_2 = [];
+    
+    for(var i = 0; i < mean_sample_size; i++)
+    {
+        means_class_1.push(mean_distribution_class1.sample());
+        means_class_2.push(mean_distribution_class2.sample());
+    }
+
+    return [means_class_1, means_class_2]
+}
+
+//As described in ESL
+function new_generateData(sampleSize, noise, means)
+{
+
+    var means_class_1 = means[0]
+    var means_class_2 = means[1]
+
+    var data = []
+    var identidy_mat_small = [
+        [ 1.0/5.0, 0.0,],
+        [ 0.0, 1.0/5.0]
+    ];
+    for(var i = 0; i < sampleSize/2; i++)
+    {
+        var mean_class_1 = means_class_1[Math.floor(Math.random()*means_class_1.length)];
+        var distribution_class_1 = MultivariateNormal(mean_class_1, identidy_mat_small)
+        var sample_point = distribution_class_1.sample()
+        data.push({
+            'x': sample_point[0],
+            'y': sample_point[1],
+            'label': 1
+        })
+
+        var mean_class_2 = means_class_2[Math.floor(Math.random()*means_class_2.length)];
+        var distribution_class_2 = MultivariateNormal(mean_class_2, identidy_mat_small)
+        sample_point = distribution_class_2.sample()
+        data.push({
+            'x': sample_point[0],
+            'y': sample_point[1],
+            'label': -1
+        })
+
+    }
+
+    return data
+
+
+
 }
 
 function constructKDTree(points) {
@@ -351,8 +529,9 @@ var renderTestPoints = function(data) {
 };
 
 
-
-var gaussianData = generateTrainingData(400,2);
+var means = get_means();
+console.log(means);
+var gaussianData = new_generateData(400,1, means);
 //var testData = generateTrainingData(200,2);
 
 // filter out points that fall out of our domain
@@ -365,7 +544,7 @@ gaussianData = gaussianData.filter(p => {
 
 
 var tree = constructKDTree(gaussianData);
-var grid = getDecisionBoundary(tree,5);
+var grid = getDecisionBoundary(tree,init_k);
 updateHeatmap(grid);
 
 
@@ -378,16 +557,79 @@ var xMap = function(d) { return xScale(xValue(d));} // data -> display
 var yValue = function(d) { return d.y;} // data -> value
 var yMap = function(d) { return yScale(yValue(d));} // data -> display
 
+//Set k label
+d3.select('.kval').text(init_k)
+
+
 renderTrainingPoints(gaussianData);
+
+calculate_error = function(tree,dat, kval) {
+    
+    var error = 0;
+    for(var i = 0; i<dat.length; i++)
+    {
+        var nearest = tree.nearest({ x: dat[i].x, y: dat[i].y }, kval);
+            
+            var sum = 0;
+            var votes = []
+            for (var h = 0; h < nearest.length; h++)
+            {   
+                votes.push(nearest[h][0].label)
+                sum = sum + (nearest[h][0].label == -1 ? -1 : 1);
+                
+            }
+
+            var predicted_label = sum > 0 ? 1 : -1;
+            //console.log("Predicted/True label: {0}, {1} ".format(predicted_label, dat[i].label))
+            var error = error + (predicted_label == dat[i].label ? 0 : 1);
+            // console.log(error)
+    }
+
+    return error/dat.length;
+}
+
+var calculate_bias_variance = function(k) {
+
+
+    var num_sampledatasets = 10
+    var err_arr = [];
+    for (var i = 0; i < num_sampledatasets; i++) 
+    {   
+        var dat = new_generateData(1000,2, means);
+        var err = calculate_error(tree, dat, k);
+        err_arr.push(err)
+    }
+
+    console.log(k)
+    console.log(err_arr);
+    console.log("Mean:", math.mean(err_arr))
+    console.log("Standard deviation:", math.pow(math.std(err_arr),2))
+}
+calculate_bias_variance(init_k);
 //renderTestPoints(testData);
 d3.select('#kparameter').on('change', function() {
   
   d3.select('.kval').text(this.value)
   grid = getDecisionBoundary(tree, this.value)
   updateHeatmap(grid)
-
+  calculate_bias_variance(this.value);
 
 });
+
+
+// UTIL
+// FROM https://stackoverflow.com/questions/25227119/javascript-strings-format-is-not-defined
+String.prototype.format = function () {
+        var args = [].slice.call(arguments);
+        return this.replace(/(\{\d+\})/g, function (a){
+            return args[+(a.substr(1,a.length-2))||0];
+        });
+};
+
+
+
+
+
 
 
 var jsonCircles = [
@@ -406,6 +648,7 @@ svgDartBoard.selectAll("circle")
         .attr("stroke", "black")
         .attr("stroke-width", 3)
         .style("fill", function(d) { return d.color; });
+    
 
 </script>
 </body>
