@@ -194,7 +194,7 @@ h1 {
         </div>
     </div>
 
-<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="https://fastcdn.org/D3.js/3.5.6/d3.min.js"></script>
 <script src="/kdTree.js"></script>
 <script src="/multivariate-normal.min.js"></script>
 
@@ -683,6 +683,31 @@ var getVarianceOfModel = function(noise, k)
 }
 
 
+var getBiasOfModel = function(means, k)
+{
+    var num_training_sets = 100;
+
+    var errors = []
+
+    for(var i = 0; i < num_training_sets; i++)
+    {
+        var gaussianData = new_generateData(400,noiseMap(noise), means);
+    
+        // filter out points that fall out of our domain
+        gaussianData = gaussianData.filter(p => {
+            return p.x >= domain[0] && p.x <= domain[1]
+                && p.y >= domain[0] && p.y <= domain[1];
+            });
+
+        tree = 
+   
+   
+    }
+    
+
+}
+
+
 
 //renderTestPoints(testData);
 d3.select('#kparameter').on('change', function() {
@@ -701,7 +726,7 @@ d3.select('#noiseparameter').on('change', function() {
     
     noise = this.value;
     d3.select('.noiseval').text(this.value)  
-    gaussianData = new_generateData(400,noiseMap(this.value)*5, means);
+    gaussianData = new_generateData(400,noiseMap(this.value), means);
     
     // filter out points that fall out of our domain
     gaussianData = gaussianData.filter(p => {
