@@ -169,7 +169,7 @@ h1 {
 </style>
 <body>
     <header>
-            <h1 class="heading">Tinker With K-nearest Neighbours and Linear Models to Understand the <b>Bias-Variance Tradeoff</b> <br><span class="optional">Right Here </span>in Your Browser.</h1>
+            <h1 class="heading">Tinker With K-nearest Neighbours to Better Understand the <b>Bias-Variance Tradeoff</b> <br><span class="optional">Right Here </span>in Your Browser.</h1>
     </header>
     <div id="main">
         <div id="controls" style="width:200px;">
@@ -306,6 +306,7 @@ var dartRadiusScale = d3.scale.linear()
 
 
 var noiseMap = d3.scale.linear().domain([10,100]).range([0.05,0.35])
+var biasMap = d3.scale.linear().domain([0,0.3]).range([0,3])
 
 /**
  * 
@@ -364,9 +365,20 @@ function get_means() {
     var means_class_2 = [];
     
     for(var i = 0; i < mean_sample_size; i++)
-    {
-        means_class_1.push(mean_distribution_class1.sample());
-        means_class_2.push(mean_distribution_class2.sample());
+    {   
+        var mean_1 = mean_distribution_class1.sample()
+        means_class_1.push({
+            'x': mean_1[0],
+            'y': mean_1[1],
+            'label': 1
+        });
+
+        var mean_2 = mean_distribution_class2.sample();
+        means_class_2.push({
+            'x': mean_2[0],
+            'y': mean_2[1],
+            'label': -1
+        });
     }
 
     return [means_class_1, means_class_2]
@@ -375,7 +387,6 @@ function get_means() {
 //As described in ESL
 function new_generateData(sampleSize, noise, means)
 {
-    console.log("Variance,", noise);
     var means_class_1 = means[0]
     var means_class_2 = means[1]
 
@@ -387,7 +398,7 @@ function new_generateData(sampleSize, noise, means)
     for(var i = 0; i < sampleSize/2; i++)
     {
         var mean_class_1 = means_class_1[Math.floor(Math.random()*means_class_1.length)];
-        var distribution_class_1 = MultivariateNormal(mean_class_1, identidy_mat_small)
+        var distribution_class_1 = MultivariateNormal([mean_class_1.x, mean_class_1.y], identidy_mat_small)
         var sample_point = distribution_class_1.sample()
         data.push({
             'x': sample_point[0],
@@ -396,7 +407,7 @@ function new_generateData(sampleSize, noise, means)
         })
 
         var mean_class_2 = means_class_2[Math.floor(Math.random()*means_class_2.length)];
-        var distribution_class_2 = MultivariateNormal(mean_class_2, identidy_mat_small)
+        var distribution_class_2 = MultivariateNormal([mean_class_2.x, mean_class_2.y], identidy_mat_small)
         sample_point = distribution_class_2.sample()
         data.push({
             'x': sample_point[0],
@@ -583,6 +594,15 @@ d3.select('.noiseval').text(noise)
 renderTrainingPoints(gaussianData);
 
 
+// UTIL
+// FROM https://stackoverflow.com/questions/25227119/javascript-strings-format-is-not-defined
+String.prototype.format = function () {
+        var args = [].slice.call(arguments);
+        return this.replace(/(\{\d+\})/g, function (a){
+            return args[+(a.substr(1,a.length-2))||0];
+        });
+};
+
 
 calculate_error = function(tree,dat, kval) {
     
@@ -603,6 +623,7 @@ calculate_error = function(tree,dat, kval) {
             var predicted_label = sum > 0 ? 1 : -1;
             //console.log("Predicted/True label: {0}, {1} ".format(predicted_label, dat[i].label))
             var error = error + (predicted_label == dat[i].label ? 0 : 1);
+            
             // console.log(error)
     }
 
@@ -632,9 +653,8 @@ var getDartBoardPoints = function(bias, variance) {
     var theta = Math.floor(Math.random() * (360 - 0 + 1)) + 0;
     var xCoord = bias*math.cos(math.unit(theta, 'deg'));
     var yCoord = bias*math.sin(math.unit(theta, 'deg'));
-    console.log(theta);
     var points = []
-    var n = 10;
+    var n = 20;
 
     var identidy_mat = [
         [ variance, 0.0,],
@@ -688,21 +708,28 @@ var getBiasOfModel = function(means, k)
     var num_training_sets = 100;
 
     var errors = []
-
+    var meanvector = means[0].concat(means[1])
     for(var i = 0; i < num_training_sets; i++)
     {
-        var gaussianData = new_generateData(400,noiseMap(noise), means);
+        var data = new_generateData(400,noiseMap(noise), means);
     
         // filter out points that fall out of our domain
-        gaussianData = gaussianData.filter(p => {
+        data = data.filter(p => {
             return p.x >= domain[0] && p.x <= domain[1]
                 && p.y >= domain[0] && p.y <= domain[1];
             });
+        
+       var tree = constructKDTree(data);
 
+       
+       var error = calculate_error(tree, meanvector, kval);
+       errors.push(error)
         
    
    
     }
+
+    return errors
     
 
 }
@@ -717,8 +744,12 @@ d3.select('#kparameter').on('change', function() {
   grid = getDecisionBoundary(tree, this.value)
   updateHeatmap(grid)
  // calculate_bias_variance(this.value);
-  var dartPoints = getDartBoardPoints(0, getVarianceOfModel(noiseMap(noise)*10,this.value));
+  var biasvec = getBiasOfModel(means, kval)
+  var dartPoints = getDartBoardPoints(biasMap(math.mean(biasvec)), getVarianceOfModel(noiseMap(noise)*5,this.value));
   renderDartBoard(dartPoints);
+  
+  console.log(biasvec)
+  console.log(math.mean(biasvec))
 
 });
 
@@ -740,29 +771,15 @@ d3.select('#noiseparameter').on('change', function() {
 
     grid = getDecisionBoundary(tree, kval)
     updateHeatmap(grid)
-    var dartPoints = getDartBoardPoints(0, getVarianceOfModel(noiseMap(this.value)*10,kval));
-  renderDartBoard(dartPoints);
-
+    var biasvec = getBiasOfModel(means, kval)
+    var dartPoints = getDartBoardPoints(biasMap(math.mean(biasvec)), getVarianceOfModel(noiseMap(this.value)*5,kval));
+    renderDartBoard(dartPoints);
+  
+    console.log(biasvec)
+    console.log(math.mean(biasvec))
 
 
 });
-
-
-
-
-
-
-
-// UTIL
-// FROM https://stackoverflow.com/questions/25227119/javascript-strings-format-is-not-defined
-String.prototype.format = function () {
-        var args = [].slice.call(arguments);
-        return this.replace(/(\{\d+\})/g, function (a){
-            return args[+(a.substr(1,a.length-2))||0];
-        });
-};
-
-
 
 
 
@@ -785,8 +802,11 @@ svgDartBoard.selectAll("circle")
         .attr("stroke-width", 3)
         .style("fill", function(d) { return d.color; });
 
-var dartPoints = getDartBoardPoints(0, getVarianceOfModel(noiseMap(noise)*10,kval));
-renderDartBoard(dartPoints);
+  var biasvec = getBiasOfModel(means, kval)
+  var dartPoints = getDartBoardPoints(biasMap(math.mean(biasvec)), getVarianceOfModel(noiseMap(noise)*5,kval));
+  renderDartBoard(dartPoints);
+  
+ 
 
 </script>
 </body>
