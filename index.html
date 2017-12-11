@@ -68,6 +68,11 @@ h1 {
     margin-right: 5px;
 }
 
+#colormap {
+    vertical-align: top;
+    margin-left: 20px;
+}
+
 #main p {
     color: #777;
     font-size: 16px;
@@ -88,8 +93,16 @@ h1 {
     margin-right:10px;
    
 }
-
-
+#legend {
+    margin-left: 40px;
+}
+#legend p {
+    display:inline-block;
+    font-size: 12px;
+    line-height: 12px;
+    width: 150px;
+    
+}
 #controls {
     width: 20%;
 }
@@ -101,6 +114,10 @@ h1 {
 #plot{
     position: relative;
     width: 500px;
+}
+
+#plotcontainer {
+    height: 430px;
 }
 
 #dartcontainer {
@@ -225,6 +242,28 @@ h1 {
                 <div id="plotcontainer">
                     <div id="plot"></div>
                 </div>
+
+                <div id="legend">
+                    <p>
+                        Color shows the confidence of our prediction where 0 means unsure <br>
+                         <br>
+                        
+                    </p>
+                    <svg width="150" height="30" id="colormap">
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="100%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#f59322" stop-opacity="1"></stop>
+                                <stop offset="50%" stop-color="#e8eaeb" stop-opacity="1"></stop>
+                                <stop offset="100%" stop-color="#0877bd" stop-opacity="1"></stop>
+                                </linearGradient>
+                            </defs>
+                    
+                            <g class="core" transform="translate(3, 0)">
+                                <rect width="144" height="10" style="fill: url('#gradient');"></rect>
+                            </g>
+                    </svg>
+                </div>
+                
                 
                 
                 
@@ -241,6 +280,7 @@ h1 {
 <script src="https://fastcdn.org/D3.js/3.5.6/d3.min.js"></script>
 <script src="kdTree.js"></script>
 <script src="multivariate-normal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
 
 
 
@@ -288,6 +328,19 @@ var svg = d3.select('#plot').append('svg')
     .append("g")
     .attr("transform", "translate(" + padding + "," + padding + ")");
 
+//Setup colormap
+// Add scale to the gradient color map.
+var xColor = d3.scale.linear().domain([-1, 1]).range([0, 144]);
+var xColorAxis = d3.svg.axis()
+    .scale(xColor)
+    .orient("bottom")
+    .tickValues([-1, 0, 1])
+    .tickFormat(d3.format("d"));
+
+d3.select("#colormap g.core").append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0,10)")
+    .call(xColorAxis);
 
 // Set up our scales
 var xScale = d3.scale.linear()
@@ -887,6 +940,12 @@ svgDartBoard.selectAll("circle")
   var dartPoints = getDartBoardPoints(biasMap(math.mean(biasvec)), getVarianceOfModel(noiseMap(noise)*5,kval));
   renderDartBoard(dartPoints);
   
+
+$("#button").click(function() {
+    $('html, body').animate({
+        scrollTop: $("#myDiv").offset().top
+    }, 2000);
+});
  
 
 </script>
