@@ -50,7 +50,7 @@ h1 {
     margin-left: auto;
     margin-right: auto;
     width: 1100px;
-    margin-top: 50px;
+    margin-top: 30px;
     -webkit-justify-content: space-between;
     justify-content: space-between;
 }
@@ -83,6 +83,12 @@ h1 {
    
 }
 
+.error > p {
+    display: inline-block;
+    margin-right:10px;
+   
+}
+
 
 #controls {
     width: 20%;
@@ -97,10 +103,18 @@ h1 {
     width: 500px;
 }
 
-#dart {
+#dartcontainer {
  width: 350px;
 
 }
+
+#dartcontainer {
+    font-size: 14px;
+}
+
+#dartcontainer br {
+    display: block;
+    margin: 10px 0;}
 
 .axis path,
 .axis line {
@@ -130,6 +144,14 @@ h1 {
     stroke-opacity: 0.8;
     fill-opacity: 0.9; 
 }
+
+#test {
+    margin-top: 20px;
+}
+#test p {
+    display: inline-block;
+}
+
 
 /* Slider */
 
@@ -169,14 +191,14 @@ h1 {
 </style>
 <body>
     <header>
-            <h1 class="heading">Tinker With K-nearest Neighbours to Better Understand the <b>Bias-Variance Tradeoff</b> <br><span class="optional">Right Here </span>in Your Browser.</h1>
+            <h1 class="heading">Tinker With K-nearest Neighbours to Better Understand the <b>Bias-Variance Tradeoff</b> </h1>
     </header>
     <div id="main">
         <div id="controls" style="width:200px;">
             <h4>Settings</h4>
             <p>Choose the number of nearest neighbours:</p><div class="kselect"><span>K:</span><span class="kval"></span></div>
             <input id="kparameter" class="mdl-slider mdl-js-slider" type="range"
-            min="1" max="200" value="25" tabindex="0">
+            min="0" max="20" value="10" tabindex="0">
             
             <div class="noisecontainer">
                 <p>Noise level:</p><span class="noiseval"></span>
@@ -184,14 +206,36 @@ h1 {
                 min="10" max="100" step="10" value="50" tabindex="0">
             </div>
 
+            <div id="test">
+                    <input type="checkbox" name="testing" id="testdatacheckbox">
+                    <p><label for="testing">Show test data</label></p>
+            </div>
+
+            <h4>Metrics</h4>
+            <div class="error">
+                <p>Training error: </p><span id="training_error"></span>
+
+                <p>Test error: </p><span id="test_error"></span>
+            </div>
+            
+
         </div>
         <div id="output">
                 <h4>Output</h4>
-                <div id="plot"></div>
+                <div id="plotcontainer">
+                    <div id="plot"></div>
+                </div>
+                
+                
+                
         </div>
-        <div id="dart">
+        <div id="dartcontainer">
                 <h4>Bias and Variance</h4>
-        </div>
+                <div id="dart"></div>
+                <p> - Each point represents your model run on new set of training data<br>
+                    - The closer the points are to the center the more accurately they model the true distribution <br>
+                    - A higher dispersion suggests your model is overfitting to the variance in the underlying data distribution </p>
+            </div>
     </div>
 
 <script src="https://fastcdn.org/D3.js/3.5.6/d3.min.js"></script>
@@ -209,10 +253,11 @@ var domain = [-3.5,3.5]; //the actual coordinate boundaries that we will use
 // Display parameters
 const width = 400; // width in pixel for whole plot
 const height = 400; // height in pixel for whole plot
-const dartBoardSize = 300; //dartboard size in px size*size
+const dartBoardSize = 250; //dartboard size in px size*size
 var kval = 5;
 const padding = 20; // padding for axes
 const NUM_SHADES = 30;
+const K_VALS = [1,2,3,4,5,6,7,9,10,11,12,20,30,40,60,80,100,120,140,160];
 var noise = 50;
 var MultivariateNormal = window.MultivariateNormal.default;
 /*
@@ -305,7 +350,7 @@ var dartRadiusScale = d3.scale.linear()
 
 
 
-var noiseMap = d3.scale.linear().domain([10,100]).range([0.05,0.35])
+var noiseMap = d3.scale.linear().domain([10,100]).range([0.05,0.2])
 var biasMap = d3.scale.linear().domain([0,0.3]).range([0,3])
 
 /**
@@ -352,8 +397,8 @@ function generateTrainingData(sampleSize, noise) {
 
 function get_means() {
     var identidy_mat = [
-        [ 1.0, 0.0,],
-        [ 0.0, 1.0]
+        [ 2.0, 0.0,],
+        [ 0.0, 2.0]
     ];
 
     var mean_sample_size = 10;
@@ -538,11 +583,11 @@ var renderTrainingPoints = function(data) {
       .attr("r", 4.5)
       .attr("cx", xMap)
       .attr("cy", yMap)
-      .style("fill", function(d) { return labelToColor(d.label);}) 
+      .style("fill", function(d) { return color(d.label);}) 
 };
 
 var renderTestPoints = function(data) {
-    console.log(data)
+    
   
   // draw dot
   svg.selectAll(".dot")
@@ -569,8 +614,11 @@ gaussianData = gaussianData.filter(p => {
         && p.y >= domain[0] && p.y <= domain[1];
     });
 
-
-
+var testData = new_generateData(400, noiseMap(noise), means);
+testData = testData.filter(p => {
+      return p.x >= domain[0] && p.x <= domain[1]
+        && p.y >= domain[0] && p.y <= domain[1];
+    });
 
 var tree = constructKDTree(gaussianData);
 var grid = getDecisionBoundary(tree,kval);
@@ -589,19 +637,6 @@ var yMap = function(d) { return yScale(yValue(d));} // data -> display
 //Set k label
 d3.select('.kval').text(kval)
 d3.select('.noiseval').text(noise)
-
-
-renderTrainingPoints(gaussianData);
-
-
-// UTIL
-// FROM https://stackoverflow.com/questions/25227119/javascript-strings-format-is-not-defined
-String.prototype.format = function () {
-        var args = [].slice.call(arguments);
-        return this.replace(/(\{\d+\})/g, function (a){
-            return args[+(a.substr(1,a.length-2))||0];
-        });
-};
 
 
 calculate_error = function(tree,dat, kval) {
@@ -629,6 +664,25 @@ calculate_error = function(tree,dat, kval) {
 
     return error/dat.length;
 }
+
+renderTrainingPoints(gaussianData);
+var training_error = calculate_error(tree, gaussianData, kval);
+d3.select('#training_error').text(training_error.toFixed(2));
+
+var test_error = calculate_error(tree, testData, kval);
+d3.select('#test_error').text(test_error.toFixed(2));
+
+
+
+// UTIL
+// FROM https://stackoverflow.com/questions/25227119/javascript-strings-format-is-not-defined
+String.prototype.format = function () {
+        var args = [].slice.call(arguments);
+        return this.replace(/(\{\d+\})/g, function (a){
+            return args[+(a.substr(1,a.length-2))||0];
+        });
+};
+
 
 var calculate_bias_variance = function(k) {
 
@@ -736,18 +790,25 @@ var getBiasOfModel = function(means, k)
 
 
 
+
+
 //renderTestPoints(testData);
 d3.select('#kparameter').on('change', function() {
   
-  kval = this.value;
-  d3.select('.kval').text(this.value)
-  grid = getDecisionBoundary(tree, this.value)
+    console.log("NEW K", this.value)
+  kval = K_VALS[this.value];
+  d3.select('.kval').text(kval)
+  grid = getDecisionBoundary(tree, kval)
   updateHeatmap(grid)
  // calculate_bias_variance(this.value);
   var biasvec = getBiasOfModel(means, kval)
-  var dartPoints = getDartBoardPoints(biasMap(math.mean(biasvec)), getVarianceOfModel(noiseMap(noise)*5,this.value));
+  var dartPoints = getDartBoardPoints(biasMap(math.mean(biasvec)), getVarianceOfModel(noiseMap(noise)*5,kval));
   renderDartBoard(dartPoints);
-  
+  var training_error = calculate_error(tree, gaussianData, kval);
+  d3.select('#training_error').text(training_error.toFixed(2));
+
+  var test_error = calculate_error(tree, testData, kval);
+  d3.select('#test_error').text(test_error.toFixed(2));
   console.log(biasvec)
   console.log(math.mean(biasvec))
 
@@ -774,12 +835,32 @@ d3.select('#noiseparameter').on('change', function() {
     var biasvec = getBiasOfModel(means, kval)
     var dartPoints = getDartBoardPoints(biasMap(math.mean(biasvec)), getVarianceOfModel(noiseMap(this.value)*5,kval));
     renderDartBoard(dartPoints);
+
+    var training_error = calculate_error(tree, gaussianData, kval);
+    d3.select('#training_error').text(training_error.toFixed(2));
+  
+    var test_error = calculate_error(tree, testData, kval);
+    d3.select('#test_error').text(test_error.toFixed(2));
   
     console.log(biasvec)
     console.log(math.mean(biasvec))
 
 
 });
+
+d3.select('#testdatacheckbox').on('change', function() {
+    
+    if(this.checked)
+    {
+        renderTestPoints(testData);
+    }
+
+    else{
+        svg.selectAll(".test").remove();
+    }
+
+});
+
 
 
 
