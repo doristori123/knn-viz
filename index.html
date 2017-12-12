@@ -50,9 +50,16 @@ h1 {
     margin-left: auto;
     margin-right: auto;
     width: 1100px;
-    margin-top: 30px;
+    margin-top: 10px;
     -webkit-justify-content: space-between;
     justify-content: space-between;
+}
+
+.dartimg {
+    height: 200px;
+    width: 220px;
+    margin:auto;
+    display: block;
 }
 
 #main h4 {
@@ -111,6 +118,20 @@ h1 {
     
 }
 
+.dartimgcontainer > div {
+    display: inline-block;
+}
+
+.dartdescr {
+    font-size: 14px !important;
+    color: black !important;
+    text-align: center !important;
+}
+
+#output h4 {
+    margin-bottom: 0px;
+}
+
 #plot{
     position: relative;
     width: 500px;
@@ -118,6 +139,11 @@ h1 {
 
 #plotcontainer {
     height: 430px;
+}
+
+.var {
+    margin-bottom: 0;
+    display: inline;
 }
 
 #dartcontainer {
@@ -205,6 +231,33 @@ h1 {
 }
 
 
+#story {
+
+    width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#story p {
+    font-weight: 400;
+    font-size: 17px;
+    line-height: 1.6;
+    color: rgba(0, 0, 0, 0.7);
+    text-align:justify;
+}
+
+#datageneration{
+    position: relative;
+    width: 400px;
+    height: 400px;
+
+}
+
+.means {
+    stroke: black;
+    stroke-width: 2;
+}
+
 </style>
 <body>
     <header>
@@ -273,8 +326,68 @@ h1 {
                 <div id="dart"></div>
                 <p> - Each point represents your model fit on a new set of training data<p>
                 <p> - The closer the points are to the center the more accurately they model the true distribution </p>
-                <p> - A higher dispersion suggests your model is overfitting to the variance in the underlying data distribution </p>
+                <p> - A higher dispersion suggests your model is overfitting to noise in the underlying data distribution </p>
             </div>
+    </div>
+
+    <div id="story">
+        <h4> The Bias-Variance Tradeoff </h4>
+        <p>The Bias-Variance Tradeoff is one of the most fundamental concepts in Machine Learning. Understanding this tradeoff is the key to develop an intuitive sense of how to tune your models whose job is to accurately model the underlying data distribution.  
+        </p><p>But what exactly is this tradeoff? When we train our model we measure how well it performs on the data that we use to train it on. This error is called <strong>training error</strong>. <br>
+        However, what we really care about is <strong>test error</strong>, the error when predicting the response variable for new data that our model hasn't seen before!
+       </p><p>When trying to optimize for training error we will eventually start to overfit to noise in the underlying data distribution we are trying to model. So while our training error 
+           is close or at zero it might do terribly on the test data! The hard part is finding the sweet spot where our test error is minimized. It is important to remember that you can never train on the test data!</p>
+           
+           <p> We can characterize this tradeoff as follows: </p>
+
+           <p>1. How much can we minimize training error</p>
+           <p>2. How well does the training error approximate the test error</p>
+        
+        
+        
+        
+
+        <p>But how exactly do <strong>bias</strong> and <strong>variance</strong> relate to this tradeoff?</p>
+        <p>They are the two source of errors in our test error and it is impossible to optimize for both.</p>
+        
+        <blockquote>
+        <p><strong> Bias:</strong> <em>The error due to bias is taken as the difference between the expected (or average) prediction of our model and the correct value which we are trying to predict. </em></p>
+          
+        <p class="var"><strong> Variance:</strong> <em>The error due to variance is taken as the variability of a model prediction for a given data point.</em></p>
+        </blockquote>
+        
+        <p>-- <cite>Scott Fortmann-Roe [<a href="http://scott.fortmann-roe.com/docs/BiasVariance.html">link</a>]</cite></p>
+        
+        <p>So we can think of the bias as the expected difference between our average model prediction and the true data distribution. Is our model complex enough to 
+            capture the intrincities of the underlying data distribution? If our bias is high our model is said to <strong>underfit</strong>  we are using too simple of a model.
+ 
+
+        </p>
+
+        <p> The variance however is characterized by how consistent our model is. If we would build our model for a large number of training sets would it consistently do good or would its results vary? If our model is too complex
+            for the underlying data distribution we start to <strong>overfit</strong>. </p>
+        
+        <p>It is intuitive to think about the tradeoff as a dartboard. Each dart you throw is your model trained on a new set of training data. The closer the darts are to the center the more 
+            accurately they are modelling the underlying data distribution. Also, as they get more dispersed it means that your model is overfitting to noise and is not consistent in its accuracy.
+        </p>
+
+        <div class="dartimgcontainer"><div><img class="dartimg" src="high_bias_low_var.png"><p class="dartdescr"> High bias but low variance </p></div><div><img class="dartimg" src="low_bias_high_var.png"><p class="dartdescr"> Low bias but high variance </p></div></div>
+        
+        <h4>K-nearest neighbours</h4>
+        <p>To explain the bias-variance tradeoff our playground above employs the K-nearest neighbour classification algorithm. The algorithm takes a training dataset consisting of labeled points in Euclidean space that belong to one of two classes. 
+            The algorithm then classifies new data by checking the majority class of the <em>k</em> nearest points. The choice of <em>k</em>> is highly related to the bias variance tradeoff. How do you think  the choice of <em>k</em> affects it? </p>
+        <p>
+            Go ahead and play with k-nearest neighbours at the playground at the top of this page before we reveal to you the true distribution we used to model the data for the playground.
+        </p>
+        <h4>Uncovering the true distribution</h4>
+
+        <p>So by now you've hopefully </p>
+
+        <div id="datageneration"></div>
+
+        <h4>Finding the optimal k</h4>
+
+
     </div>
 
 <script src="https://fastcdn.org/D3.js/3.5.6/d3.min.js"></script>
@@ -328,6 +441,16 @@ var svg = d3.select('#plot').append('svg')
     .append("g")
     .attr("transform", "translate(" + padding + "," + padding + ")");
 
+//set up our data generation plot 
+var data_generation_svg = d3.select('#datageneration').append('svg')
+    .attr("width", width)
+    .attr("height", height)
+    .style("position", "absolute")
+    .style("left", "0")
+    .style("top", "0")
+    .append("g")
+    .attr("transform", "translate(" + padding + "," + padding + ")");
+
 //Setup colormap
 // Add scale to the gradient color map.
 var xColor = d3.scale.linear().domain([-1, 1]).range([0, 144]);
@@ -369,10 +492,20 @@ svg.append("g")
     .attr("transform", "translate(0," + (height-2*padding) + ")")
     .call(xAxis)
 
+data_generation_svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + (height-2*padding) + ")")
+    .call(xAxis)
+
 
 
 // y-axis
 svg.append("g")
+    .attr("class", "y axis")
+    .attr("transform", "translate(0,0)")
+    .call(yAxis)
+
+data_generation_svg.append("g")
     .attr("class", "y axis")
     .attr("transform", "translate(0,0)")
     .call(yAxis)
@@ -624,19 +757,67 @@ function updateHeatmap(grid){
 
 }
 
-var renderTrainingPoints = function(data) {
- 
-    svg.selectAll("circle").remove();
-    // draw dot
-  svg.selectAll(".dot")
-      .data(data)
-    .enter().append("circle")
-      .attr("class", "dot")
-      .attr("class", "train")
-      .attr("r", 4.5)
-      .attr("cx", xMap)
-      .attr("cy", yMap)
-      .style("fill", function(d) { return color(d.label);}) 
+var renderTrainingPoints = function(data, svg_obj, transition = false) {
+    
+    svg_obj.selectAll(".train").remove();
+    
+    if(transition)
+    {
+        var circle = svg_obj.selectAll(".dot")
+            .data(data)
+            .enter().append("circle")
+            .attr("class", "dot")
+            .attr("class", "train")
+            .attr("r", 0)
+            .attr("cx", xMap)
+            .attr("cy", yMap)
+            .style("fill", function(d) { return color(d.label);})
+
+
+            
+    
+        repeat();
+
+        function repeat() {
+            var n = 0
+            circle.each(function() {
+                n++;
+            })
+            .attr("r", 0)
+            .transition()
+            .delay(function(d,i) {
+
+                return 20*400+i*10;
+            })
+            .duration(1000)
+            .ease("linear")
+            .attr("r", 3.5)
+            .each("end", function() {
+                n--;
+                if (!n) {
+                    setTimeout(function(){
+                    repeat()
+                }, 4000);
+                
+                }
+            });
+        }
+    }
+    else {
+    
+        // draw dot
+        svg_obj.selectAll(".dot")
+            .data(data)
+            .enter().append("circle")
+            .attr("class", "dot")
+            .attr("class", "train")
+            .attr("r", 4.5)
+            .attr("cx", xMap)
+            .attr("cy", yMap)
+            .style("fill", function(d) { return color(d.label);}) 
+
+    }
+    
 };
 
 var renderTestPoints = function(data) {
@@ -651,7 +832,7 @@ var renderTestPoints = function(data) {
       .attr("r", 4.5)
       .attr("cx", xMap)
       .attr("cy", yMap)
-      .style("fill", function(d) { return labelToColor(d.label);}) 
+      .style("fill", function(d) { return color(d.label);}) 
 };
 
 
@@ -718,7 +899,7 @@ calculate_error = function(tree,dat, kval) {
     return error/dat.length;
 }
 
-renderTrainingPoints(gaussianData);
+renderTrainingPoints(gaussianData, svg);
 var training_error = calculate_error(tree, gaussianData, kval);
 d3.select('#training_error').text(training_error.toFixed(2));
 
@@ -787,6 +968,7 @@ var renderDartBoard = function(points) {
     //Clear old points
     svgDartBoard.selectAll(".train").remove();
 
+    var directions = [-4,4];
     //Draw new ones
     svgDartBoard.selectAll(".dot")
         .data(points)
@@ -794,9 +976,26 @@ var renderDartBoard = function(points) {
       .attr("class", "dot")
       .attr("class", "train")
       .attr("r", 3.5)
-      .attr("cx", function (d) { return dartScale(d.x); })
-      .attr("cy", function (d) { return dartScale(d.y); })
-      .style("fill", "blue") 
+      .attr("cx", function() {
+          var rand = xScale(directions[Math.floor(Math.random() * directions.length)])
+          return rand
+        })
+      .attr("cy", function() {
+          return  yScale(directions[Math.floor(Math.random() * directions.length)])
+        })
+      .style("fill", "blue")
+      .transition()
+        .delay(function(d,i) {
+            return i*200;
+        })
+        .attr("cx", function (d) { return dartScale(d.x); })
+        .attr("cy", function (d) { return dartScale(d.y); })
+        .duration(1000)
+        .ease("linear")
+
+
+    
+
 }
 
 
@@ -879,7 +1078,7 @@ d3.select('#noiseparameter').on('change', function() {
             && p.y >= domain[0] && p.y <= domain[1];
         });
 
-    renderTrainingPoints(gaussianData);
+    renderTrainingPoints(gaussianData, svg);
 
     var tree = constructKDTree(gaussianData);
 
@@ -913,6 +1112,81 @@ d3.select('#testdatacheckbox').on('change', function() {
     }
 
 });
+
+var rendermeanofmeans = function() {
+
+    var mean_mean = [{'x':0.5, 'y':-0.5, 'label': 1}, {'x': -0.5, 'y': 0.5, 'label': -1 }]
+    data_generation_svg.selectAll(".meansofmeans").remove();
+
+    data_generation_svg.selectAll(".dot")
+        .data(mean_mean)
+        .enter().append("circle")
+      .attr("class", "dot")
+      .attr("class", "meanofmeans")
+      .attr("r", 8)
+      .attr("cx", xMap)
+      .attr("cy", yMap)
+      .style("fill", function(d) { return color(d.label);})
+      .style("stroke-width", 2.5)
+      .style("stroke", "black")
+
+
+}
+//render means 
+var rendermeans = function(means) {
+
+    var meanvector = means[0].concat(means[1])
+    //Clear old points
+    data_generation_svg.selectAll(".means").remove();
+    //Draw new ones
+    var circle = data_generation_svg.selectAll(".dot")
+        .data(meanvector)
+        .enter().append("circle")
+        .attr("class", "dot")
+        .attr("class", "means")
+        .attr("cx", xMap)
+        .attr("cy", yMap)
+        .attr("r", 0)
+        .style("fill", function(d) { return color(d.label);})
+        
+    
+        repeat();
+
+    
+
+    function repeat() {
+        var n = 0
+        circle.each(function() {
+            n++;
+        })
+        .attr("r", 0)
+        .transition()
+        .delay(function(d,i) {
+            return i*400;
+        })
+        .duration(500)
+        .ease("linear")
+        .attr("r", 3.5)
+        .each("end", function() {
+            n--;
+            if (!n) {
+                setTimeout(function(){
+                    repeat()
+                }, gaussianData.length*10+900+4000); 
+            
+            }
+        });
+
+
+
+    };
+        
+}
+
+renderTrainingPoints(gaussianData,data_generation_svg, true);
+rendermeans(means);
+rendermeanofmeans();
+
 
 
 
