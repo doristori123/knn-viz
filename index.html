@@ -1265,10 +1265,29 @@ gaussianData.sort(function(a,b) {
 
 });
 
-renderTrainingPoints(gaussianData,data_generation_svg, true);
-rendermeans(means);
-rendermeanofmeans();
 
+// Fire off data generation viz on scroll
+var seenDataGeneration = false;
+$(window).scroll(function() {
+
+    var top_of_element = $("#datagenerationcontainer").offset().top;
+    var bottom_of_element = $("#datagenerationcontainer").offset().top + $("#datagenerationcontainer").outerHeight();
+    var bottom_of_screen = $(window).scrollTop() + window.innerHeight;
+    var top_of_screen = $(window).scrollTop();
+
+    if((bottom_of_screen > top_of_element) && (top_of_screen < bottom_of_element)) {
+           console.log("hey")
+    
+        if (!seenDataGeneration) {
+        renderTrainingPoints(gaussianData,data_generation_svg, true);
+        rendermeans(means);
+        rendermeanofmeans();
+        seenDataGeneration = true;
+        }
+    } else {
+        console.log("no")
+    }
+});
 
 // Legend for data generating plot
 var legend = d3.select("#generation_legend").append("svg").style("width", "400px").style("height", "40px").style("position", "absolute").style("top", "-20px").style("left", "40px").selectAll(".legend")
