@@ -51,6 +51,7 @@ h1 {
     width: 1100px;
     -webkit-justify-content: space-between;
     justify-content: space-between;
+    margin-bottom: 100px;
 }
 
 .dartimg {
@@ -394,8 +395,13 @@ footer {
         <div class="dartimgcontainer"><div><img class="dartimg" src="high_bias_low_var.png"><p class="dartdescr"> High bias but low variance </p></div><div><img class="dartimg" src="low_bias_high_var.png"><p class="dartdescr"> Low bias but high variance </p></div></div>
         
         <h4>K-nearest neighbours</h4>
-        <p>To explain the bias-variance tradeoff our playground above employs the K-nearest neighbour classification algorithm. The algorithm takes a training dataset consisting of labeled points in Euclidean space that belong to one of two classes. 
-            The algorithm then classifies new data by checking the majority class of the <em>k</em> nearest points. The choice of <em>k</em>> is highly related to the bias variance tradeoff. How do you think  the choice of <em>k</em> affects it? </p>
+        <p>To explain the bias-variance tradeoff our playground above employs the K-nearest neighbour classification algorithm. The algorithm takes a training dataset consisting of labeled points in Euclidean space that belong to one of two classes, the blue class or the orange class. 
+            The algorithm classifies new data by checking the majority class of the <em>k</em> nearest points. The choice of <em>k</em>> is highly related to the bias variance tradeoff. How do you think  the choice of <em>k</em> affects it? </p>
+            
+            <p>You can adjust how much noise there is in the dataset, more noise will make it harder for your model to model the true signal in the data. The training and test error is displayed for each of your choice of k as well as the decision boundary, telling you exactly how new points would be classified
+                On the right there is the aforementioned dartboard for assessing the bias and the variance. For each noise and <em>k</em> parameter we run the model on numerous training sets generated from the same underlying distribution. We then visualize each model as a dart, remember it is not only best to hit close to the center but also to show consistency.
+            </p>
+
         <p>
             Go ahead and play with k-nearest neighbours at the playground at the top of this page before we reveal to you the true distribution we used to model the data for the playground.
         </p>
@@ -1231,7 +1237,7 @@ var rendermeans = function(means) {
             if (!n) {
                 setTimeout(function(){
                     repeat()
-                }, gaussianData.length*30+4000); 
+                }, gaussianData.length*30-50+4000); 
             
             }
         });
