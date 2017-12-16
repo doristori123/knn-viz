@@ -1,0 +1,30 @@
+Halldor wrote all the code for the KNN part of the project. 
+Project structure should be fairly self-explanatory:
+
+Main logic is in index.html 
+Data generating and handling  functions are in data.js
+Heatmap related code is in heatmap.js
+and dartboard realted code is in dartboard.js 
+
+==========================================================
+
+Files:                                  
+index.html - my code
+heatmap.js - my code - The heatmap is generated using the same technique that Tensorflow uses (with a canvas elements)
+                     - Additionally I used the same color scale and legend as TENSORFLOW. This is clearly marked in the code.
+data.js - my code 
+kdTree.js - library
+dartboard.js - my code (idea for dartboard svg is gotten from a static image at  http://scott.fortmann-roe.com/docs/BiasVariance.html)
+multivariate.normal.min.js - library
+high_bias_low_var.png - my screenshot of my own dartboard svg
+low_bias_high_var.png  - my screenshot of my own dartboard svg
+style.css - my code (Heavily influenced by TensorFlow's UI)
+
+
+==========================================================
+
+How to compile and run:
+
+Start a server like so in this directory:
+python -m SimpleHTTPServer
+Open a browser and go to localhost:8000
